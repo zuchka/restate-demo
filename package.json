@@ -1,0 +1,45 @@
+{
+  "name": "break-my-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "An interactive Restate durability demo for AI agents.",
+  "scripts": {
+    "dev": "tsx scripts/dev.ts",
+    "dev:web": "next dev -H 127.0.0.1 -p 3000",
+    "dev:controller": "tsx apps/controller/src/index.ts",
+    "dev:worker": "tsx apps/worker/src/index.ts",
+    "doctor": "tsx scripts/doctor.ts",
+    "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "node --import tsx --test tests/unit/*.test.ts",
+    "test:recovery": "tsx scripts/verify-recovery.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "4.0.17",
+    "@restatedev/restate-sdk": "1.16.2",
+    "@restatedev/vercel-ai-middleware": "0.4.0",
+    "ai": "7.0.2",
+    "next": "15.4.6",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "zod": "4.3.0"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "3.3.1",
+    "@restatedev/restate": "1.7.9",
+    "@restatedev/restate-server": "1.7.9",
+    "@types/node": "25.0.0",
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.0",
+    "eslint": "9.39.0",
+    "eslint-config-next": "15.4.6",
+    "tsx": "4.21.0",
+    "typescript": "5.8.3"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "packageManager": "pnpm@9.14.2"
+}

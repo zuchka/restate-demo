@@ -1,0 +1,14 @@
+listen-mode = "tcp"
+bind-ip = "127.0.0.1"
+advertised-host = "127.0.0.1"
+
+[worker.invoker]
+inactivity-timeout = "45s"
+abort-timeout = "15s"
+
+[invocation.default-retry-policy]
+initial-interval = "250ms"
+exponentiation-factor = 1.5
+max-attempts = 20
+max-interval = "3s"
+on-max-attempts = "pause"
