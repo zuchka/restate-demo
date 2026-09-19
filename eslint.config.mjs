@@ -7,7 +7,7 @@ const compatibility = new FlatCompat({ baseDirectory: directory });
 
 const config = [
   ...compatibility.extends("next/core-web-vitals", "next/typescript"),
-  { ignores: [".next/**", ".data/**", "node_modules/**", "outputs/**"] },
+  { ignores: [".next/**", ".next-build/**", ".data/**", "node_modules/**", "outputs/**"] },
 ];
 
 export default config;
