@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { demoPresets } from "@contracts";
 import type {
+  DemoPresetId,
   DisplayStatus,
   FaultKind,
   HealthSnapshot,
@@ -13,29 +15,11 @@ import type {
 import { StatusDot } from "./status-dot";
 import { Wordmark } from "./wordmark";
 import { FailureControls } from "./failure-controls";
-import { RecoveryComparison } from "./recovery-comparison";
-import { ExecutionEvidence } from "./execution-evidence";
+import { ExecutionComparison } from "./execution-comparison";
 import { MarkdownResponse } from "./markdown-response";
 
 type ControllerHealth = HealthSnapshot & { restateUiUrl: string };
 const selectedRunStorageKey = "break-my-agent.selected-invocation";
-
-const presets = [
-  {
-    label: "Rate limiting",
-    prompt:
-      "Compare fixed-window, sliding-window, and token-bucket rate limiting. Calculate requests per minute at 12 requests per second and recommend an approach.",
-  },
-  {
-    label: "Launch copy",
-    prompt:
-      "Write a concise launch announcement for a developer tool that makes distributed workflows resilient, then give me three headline options.",
-  },
-  {
-    label: "Limerick",
-    prompt: "Write a limerick about distributed systems and explain the joke in one sentence.",
-  },
-];
 
 const statusLabels: Record<DisplayStatus, string> = {
   queued: "Queued",
@@ -76,7 +60,9 @@ function shortId(value: string) {
 }
 
 export function DemoApp() {
-  const [prompt, setPrompt] = useState(presets[0].prompt);
+  const [selectedPresetId, setSelectedPresetId] = useState<DemoPresetId>(demoPresets[0].id);
+  const selectedPreset = demoPresets.find((preset) => preset.id === selectedPresetId) ?? demoPresets[0];
+  const prompt = selectedPreset.prompt;
   const [demoPacing, setDemoPacing] = useState(true);
   const [health, setHealth] = useState<ControllerHealth | null>(null);
   const [runs, setRuns] = useState<RunRecord[]>([]);
@@ -192,7 +178,7 @@ export function DemoApp() {
         method: "POST",
         body: JSON.stringify({
           clientRequestId: `run-${crypto.randomUUID()}`,
-          prompt,
+          presetId: selectedPreset.id,
           demoPacing,
         }),
       });
@@ -299,63 +285,12 @@ export function DemoApp() {
         </div>
       </header>
 
-      <section className="hero-grid" aria-label="Start an agent run">
+      <section className="hero-banner" aria-label="Durability playground">
         <div className="hero">
           <p className="eyebrow"><span>Durability playground</span><span className="eyebrow-line" /></p>
-          <h1>Break the worker.<br />Keep the promise.</h1>
-          <p className="hero-copy">Give Claude a task. Introduce a failure.<br /> See what Restate saves when things break.</p>
+          <h1>Break the worker. <br />Keep the promise.</h1>
         </div>
-          <form className="panel composer" onSubmit={submit}>
-            <div className="panel-heading">
-              <div>
-                <span className="panel-index">01</span>
-                <div>
-                  <p className="section-kicker">Agent input</p>
-                  <h2>Ask anything</h2>
-                </div>
-              </div>
-              <span className="model-badge">{health?.anthropic.model ?? "Claude"}</span>
-            </div>
-            <div className="preset-row" aria-label="Prompt presets">
-              {presets.map((preset) => (
-                <button type="button" key={preset.label} onClick={() => setPrompt(preset.prompt)}>
-                  {preset.label}
-                </button>
-              ))}
-            </div>
-            <label className="prompt-field">
-              <span className="sr-only">Agent prompt</span>
-              <textarea
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value)}
-                rows={3}
-                maxLength={6_000}
-                placeholder="Ask Claude to plan, compare, calculate, explain…"
-              />
-              <span className="character-count">{prompt.length.toLocaleString()} / 6,000</span>
-            </label>
-            <div className="composer-footer">
-              <label className="mode-toggle">
-                <input
-                  type="checkbox"
-                  checked={demoPacing}
-                  onChange={(event) => setDemoPacing(event.target.checked)}
-                />
-                <span className="toggle-track"><span /></span>
-                <span>
-                  <strong>Demo pacing</strong>
-                  <small>Adds time to try the failure controls</small>
-                </span>
-              </label>
-              <button className="run-button" type="submit" disabled={submitting || !health?.ok || prompt.trim().length < 2}>
-                <span>{submitting ? "Starting…" : "Run agent"}</span>
-                <b aria-hidden="true">↗</b>
-              </button>
-            </div>
-            {!health?.anthropic.configured && health && (
-              <p className="setup-hint">Add <code>ANTHROPIC_API_KEY</code> to <code>.env.local</code> before running the agent.</p>
-            )}
-          </form>
+        <p className="hero-copy">Choose a demo task. Introduce a failure.<br />See what Restate saves when things break.</p>
       </section>
 
       {error && (
@@ -373,18 +308,76 @@ export function DemoApp() {
         </p>
       )}
 
-      <FailureControls
-        active={active}
-        workerOnline={health?.worker.status === "online"}
-        busy={busyControl}
-        armedFault={armedFault}
-        availableActions={snapshot?.availableActions ?? []}
-        onCrash={crashWorker}
-        onFault={armFault}
-        onAction={invokeAction}
-      />
-      <ExecutionEvidence snapshot={snapshot} />
-      <RecoveryComparison snapshot={snapshot} run={selectedRun} onCopyId={copyInvocationId} />
+      <section className="control-grid" aria-label="Start and disrupt an agent run">
+          <form className="panel composer" onSubmit={submit}>
+            <div className="panel-heading">
+              <div>
+                <span className="panel-index">01</span>
+                <div>
+                  <p className="section-kicker">Agent input</p>
+                  <h2>Choose a prompt</h2>
+                </div>
+              </div>
+              <span className="model-badge">{health?.anthropic.model ?? "Claude"}</span>
+            </div>
+            <div className="preset-row" aria-label="Prompt presets">
+              {demoPresets.map((preset) => (
+                <button
+                  type="button"
+                  key={preset.id}
+                  aria-pressed={preset.id === selectedPreset.id}
+                  className={preset.id === selectedPreset.id ? "preset-selected" : undefined}
+                  onClick={() => setSelectedPresetId(preset.id)}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <label className="prompt-field">
+              <span className="sr-only">Selected demo prompt</span>
+              <textarea
+                value={prompt}
+                readOnly
+                rows={3}
+                aria-readonly="true"
+              />
+              <span className="character-count">Preset prompt · locked</span>
+            </label>
+            <div className="composer-footer">
+              <label className="mode-toggle">
+                <input
+                  type="checkbox"
+                  checked={demoPacing}
+                  onChange={(event) => setDemoPacing(event.target.checked)}
+                />
+                <span className="toggle-track"><span /></span>
+                <span>
+                  <strong>Demo pacing</strong>
+                  <small>Adds time to try the failure controls</small>
+                </span>
+              </label>
+              <button className="run-button" type="submit" disabled={submitting || !health?.ok}>
+                <span>{submitting ? "Starting…" : "Run agent"}</span>
+                <b aria-hidden="true">↗</b>
+              </button>
+            </div>
+            {!health?.anthropic.configured && health && (
+              <p className="setup-hint">Add <code>ANTHROPIC_API_KEY</code> to <code>.env.local</code> before running the agent.</p>
+            )}
+          </form>
+        <FailureControls
+          active={active}
+          workerOnline={health?.worker.status === "online"}
+          busy={busyControl}
+          armedFault={armedFault}
+          availableActions={snapshot?.availableActions ?? []}
+          onCrash={crashWorker}
+          onFault={armFault}
+          onAction={invokeAction}
+        />
+      </section>
+
+      <ExecutionComparison snapshot={snapshot} run={selectedRun} onCopyId={copyInvocationId} />
 
       <article className="panel answer-panel answer-panel--wide">
         <div className="panel-heading answer-heading">

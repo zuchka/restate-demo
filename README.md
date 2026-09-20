@@ -32,6 +32,9 @@ The controller survives worker crashes. It owns the child process, fault rules, 
 
 See [`docs/architecture.md`](docs/architecture.md) for boundaries and failure semantics.
 
+For the tested three-service Railway deployment, including custom domains and
+Cloudflare records, see [`docs/railway-deployment-plan.md`](docs/railway-deployment-plan.md).
+
 ## Requirements
 
 - Node.js 22.13 or newer

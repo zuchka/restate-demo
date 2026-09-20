@@ -9,6 +9,8 @@
     "dev:web": "next dev -H 127.0.0.1 -p 3000",
     "dev:controller": "tsx apps/controller/src/index.ts",
     "dev:worker": "tsx apps/worker/src/index.ts",
+    "start:web": "next start -H 0.0.0.0 -p ${PORT:-3000}",
+    "start:runtime": "tsx apps/controller/src/index.ts",
     "doctor": "tsx scripts/doctor.ts",
     "build": "next build",
     "typecheck": "tsc --noEmit",

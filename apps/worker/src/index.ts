@@ -6,7 +6,7 @@ import {
   durableCalls,
   rethrowTerminalToolError,
 } from "@restatedev/vercel-ai-middleware";
-import type { AgentRunInput, ToolRequest, WorkerObservation } from "@contracts";
+import { findDemoPreset, type AgentRunInput, type ToolRequest, type WorkerObservation } from "@contracts";
 import { generateText, stepCountIs, tool, wrapLanguageModel } from "ai";
 import { z } from "zod";
 import { loadLocalEnvironment } from "../../../scripts/env";
@@ -18,6 +18,7 @@ const controllerToken = process.env.CONTROLLER_INTERNAL_TOKEN ?? "local-demo-tok
 const bootId = process.env.WORKER_BOOT_ID ?? "manual-worker";
 const modelName = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
 const workerPort = Number(process.env.WORKER_PORT ?? 9_080);
+const workerHost = process.env.WORKER_HOST ?? "127.0.0.1";
 const demoToolDelay = Number(process.env.DEMO_TOOL_DELAY_MS ?? 2_200);
 
 function stableHash(value: unknown) {
@@ -152,8 +153,9 @@ async function runAgent(ctx: restate.Context, input: AgentRunInput) {
       "ANTHROPIC_API_KEY is not configured for the Break My Agent worker.",
     );
   }
-  if (!input || typeof input.prompt !== "string" || input.prompt.trim().length === 0) {
-    throw new restate.TerminalError("A non-empty prompt is required.");
+  const preset = findDemoPreset(input?.presetId);
+  if (!preset) {
+    throw new restate.TerminalError("This invocation does not use an approved demo prompt.");
   }
 
   const invocationId = ctx.request().id;
@@ -185,7 +187,7 @@ async function runAgent(ctx: restate.Context, input: AgentRunInput) {
         ? "On the first step, save a one-sentence public task summary before doing anything else."
         : "Use tools only when they improve the answer.",
     ].join(" "),
-    prompt: input.prompt,
+    prompt: preset.prompt,
     tools,
     stopWhen: stepCountIs(6),
     maxOutputTokens: 1_800,
@@ -251,12 +253,12 @@ const server = createServer(restate.createEndpointHandler({ services: [agent] })
 await new Promise<void>((resolvePromise, rejectPromise) => {
   const handleStartupError = (error: Error) => rejectPromise(error);
   server.once("error", handleStartupError);
-  server.listen(workerPort, "127.0.0.1", () => {
+  server.listen(workerPort, workerHost, () => {
     server.off("error", handleStartupError);
     resolvePromise();
   });
 });
 
 process.stdout.write(
-  `Restate agent worker listening at http://127.0.0.1:${workerPort}\n`,
+  `Restate agent worker listening on ${workerHost}:${workerPort}\n`,
 );

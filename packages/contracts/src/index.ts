@@ -7,6 +7,35 @@ export type FaultTarget = (typeof faultTargets)[number];
 export const runActions = ["pause", "resume", "cancel", "restart"] as const;
 export type RunAction = (typeof runActions)[number];
 
+export const demoPresets = [
+  {
+    id: "rate-limiting",
+    label: "Rate limiting",
+    prompt:
+      "Compare fixed-window, sliding-window, and token-bucket rate limiting. Calculate requests per minute at 12 requests per second and recommend an approach.",
+  },
+  {
+    id: "launch-copy",
+    label: "Launch copy",
+    prompt:
+      "Write a concise launch announcement for a developer tool that makes distributed workflows resilient, then give me three headline options.",
+  },
+  {
+    id: "limerick",
+    label: "Limerick",
+    prompt: "Write a limerick about distributed systems and explain the joke in one sentence.",
+  },
+] as const;
+
+export type DemoPreset = (typeof demoPresets)[number];
+export type DemoPresetId = DemoPreset["id"];
+
+export function findDemoPreset(value: unknown): DemoPreset | undefined {
+  return typeof value === "string"
+    ? demoPresets.find((preset) => preset.id === value)
+    : undefined;
+}
+
 export type WorkerState = "starting" | "online" | "offline" | "restarting";
 
 export type DisplayStatus =
@@ -24,7 +53,7 @@ export type DisplayStatus =
   | "unknown";
 
 export interface AgentRunInput {
-  prompt: string;
+  presetId: DemoPresetId;
   demoPacing: boolean;
   model: string;
 }
@@ -121,7 +150,7 @@ export interface HealthSnapshot {
 
 export interface SubmitRunRequest {
   clientRequestId: string;
-  prompt: string;
+  presetId: DemoPresetId;
   demoPacing: boolean;
 }
 

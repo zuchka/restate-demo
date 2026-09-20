@@ -14,7 +14,7 @@ import type {
   ToolRequest,
   WorkerObservation,
 } from "@contracts";
-import { faultKinds, faultTargets, runActions } from "@contracts";
+import { faultKinds, faultTargets, findDemoPreset, runActions } from "@contracts";
 import { DemoDatabase } from "./db";
 import { evaluateExpression } from "./math";
 import { extractAnswer, mapDisplayStatus, RestateClient } from "./restate";
@@ -23,10 +23,12 @@ import { loadLocalEnvironment } from "../../../scripts/env";
 
 loadLocalEnvironment();
 
-const port = Number(process.env.CONTROLLER_PORT ?? 3_100);
+const port = Number(process.env.CONTROLLER_PORT ?? process.env.PORT ?? 3_100);
+const host = process.env.CONTROLLER_HOST ?? "127.0.0.1";
 const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
 const internalToken = process.env.CONTROLLER_INTERNAL_TOKEN ?? "local-demo-token";
 const restateUiUrl = process.env.RESTATE_UI_URL ?? "http://127.0.0.1:9070/ui";
+const workerPublicUrl = process.env.WORKER_PUBLIC_URL ?? `http://127.0.0.1:${Number(process.env.WORKER_PORT ?? 9_080)}`;
 const maxBodyBytes = 64 * 1024;
 const database = new DemoDatabase();
 const restate = new RestateClient();
@@ -35,6 +37,7 @@ let workerEventInvocationId: string | null = null;
 let workerCrashAt: string | null = null;
 let workerCrashBootId: string | null = null;
 let shuttingDown = false;
+let deploymentRegistered = false;
 
 function timestamp() {
   return new Date().toISOString();
@@ -104,12 +107,12 @@ async function readJson<T>(request: IncomingMessage): Promise<T> {
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as T;
 }
 
-function validatePrompt(prompt: unknown) {
-  if (typeof prompt !== "string") throw new Error("Prompt must be a string.");
-  const trimmed = prompt.trim();
-  if (trimmed.length < 2) throw new Error("Prompt is too short.");
-  if (trimmed.length > 6_000) throw new Error("Prompt must be 6,000 characters or fewer.");
-  return trimmed;
+function validatePreset(value: unknown) {
+  const preset = findDemoPreset(value);
+  if (!preset) {
+    throw new Error("Choose one of the supported demo prompts.");
+  }
+  return preset;
 }
 
 function validateClientRequestId(value: unknown) {
@@ -160,10 +163,11 @@ function replayCommand(
 
 async function submitRun(body: SubmitRunRequest): Promise<SubmitRunResponse> {
   const clientRequestId = validateClientRequestId(body.clientRequestId);
-  const prompt = validatePrompt(body.prompt);
+  const preset = validatePreset(body.presetId);
+  const prompt = preset.prompt;
   const demoPacing = body.demoPacing !== false;
-  const input = { prompt, demoPacing, model };
-  const inputHash = hash(input);
+  const input = { presetId: preset.id, demoPacing, model };
+  const inputHash = hash({ prompt, demoPacing, model });
   const existing = database.getRunByClientRequestId(clientRequestId);
 
   if (existing) {
@@ -552,7 +556,7 @@ async function healthSnapshot(): Promise<HealthSnapshot & { restateUiUrl: string
   const worker = supervisor.snapshot();
   const restateOnline = await restate.health();
   return {
-    ok: restateOnline && worker.status === "online" && Boolean(process.env.ANTHROPIC_API_KEY),
+    ok: restateOnline && deploymentRegistered && worker.status === "online" && Boolean(process.env.ANTHROPIC_API_KEY),
     controller: { status: "online", databasePath: database.path },
     worker,
     restate: {
@@ -564,6 +568,36 @@ async function healthSnapshot(): Promise<HealthSnapshot & { restateUiUrl: string
     restateUiUrl,
     timestamp: timestamp(),
   };
+}
+
+async function registerWorkerDeployment() {
+  let attempt = 0;
+  while (!shuttingDown && !deploymentRegistered) {
+    attempt += 1;
+    try {
+      if (supervisor.snapshot().status !== "online") throw new Error("Worker is not ready yet.");
+      const response = await fetch(`${restate.adminUrl}/deployments`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ uri: workerPublicUrl, force: true }),
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(`Restate returned ${response.status}: ${detail.slice(0, 300)}`);
+      }
+      deploymentRegistered = true;
+      process.stdout.write(`Registered Restate worker deployment at ${workerPublicUrl}\n`);
+      return;
+    } catch (error) {
+      if (attempt === 1 || attempt % 10 === 0) {
+        process.stderr.write(
+          `Waiting to register the Restate worker (${error instanceof Error ? error.message : String(error)})\n`,
+        );
+      }
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, Math.min(5_000, 500 + attempt * 250)));
+    }
+  }
 }
 
 async function route(request: IncomingMessage, response: ServerResponse) {
@@ -697,9 +731,10 @@ const server = createServer((request, response) => {
   });
 });
 
-server.listen(port, "127.0.0.1", () => {
-  process.stdout.write(`Controller listening at http://127.0.0.1:${port}\n`);
+server.listen(port, host, () => {
+  process.stdout.write(`Controller listening on ${host}:${port}\n`);
   supervisor.start();
+  void registerWorkerDeployment();
 });
 
 function shutdown() {

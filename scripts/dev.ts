@@ -8,7 +8,6 @@ loadLocalEnvironment(root);
 
 const adminUrl = process.env.RESTATE_ADMIN_URL ?? "http://127.0.0.1:9070";
 const controllerUrl = process.env.CONTROLLER_URL ?? "http://127.0.0.1:3100";
-const workerUrl = `http://127.0.0.1:${Number(process.env.WORKER_PORT ?? 9_080)}`;
 const children: Array<{ label: string; child: ChildProcess }> = [];
 let stopping = false;
 
@@ -67,27 +66,8 @@ async function controllerReady() {
     signal: AbortSignal.timeout(1_000),
   });
   if (!response.ok) return false;
-  const body = (await response.json()) as { worker?: { status?: string } };
-  return body.worker?.status === "online";
-}
-
-async function runRegistration() {
-  for (let attempt = 1; attempt <= 8; attempt += 1) {
-    const exitCode = await new Promise<number>((resolvePromise) => {
-      const child = spawn(
-        "restate",
-        ["deployments", "register", workerUrl, "--force", "--yes"],
-        { cwd: root, env: process.env, stdio: "inherit" },
-      );
-      child.once("error", () => resolvePromise(127));
-      child.once("exit", (code) => resolvePromise(code ?? 1));
-    });
-    if (exitCode === 0) return;
-    if (attempt < 8) {
-      await new Promise((resolvePromise) => setTimeout(resolvePromise, 650));
-    }
-  }
-  throw new Error("Could not register the agent worker with Restate.");
+  const body = (await response.json()) as { ok?: boolean };
+  return body.ok === true;
 }
 
 async function shutdown(exitCode = 0) {
@@ -135,9 +115,6 @@ async function main() {
   log("Starting the controller and isolated agent worker…");
   startProcess("controller", process.execPath, ["--import", "tsx", "apps/controller/src/index.ts"]);
   await waitFor("the controller and agent worker", controllerReady);
-
-  log("Registering the agent worker with Restate…");
-  await runRegistration();
 
   log("Starting the web interface at http://127.0.0.1:3000…");
   startProcess("web", "next", ["dev", "-H", "127.0.0.1", "-p", "3000"]);
