@@ -685,9 +685,15 @@ code {
 
 /* Durability explanation */
 .recovery-comparison { margin: 24px 0 32px; }
-.comparison-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
+.comparison-heading { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 18px; margin-bottom: 18px; }
 .comparison-heading h2 { margin: 5px 0 0; color: var(--color-brand); font-family: var(--font-display); font-size: clamp(28px, 3.2vw, 40px); font-weight: 400; letter-spacing: -0.038em; line-height: 1.08; }
 .comparison-phase { flex-shrink: 0; max-width: 260px; padding: 5px 10px; border-radius: 999px; background: rgba(50, 88, 255, 0.08); color: var(--color-action); font-family: var(--font-mono); font-size: 10px; text-align: right; }
+.comparison-tools { display: flex; min-width: 0; align-items: flex-end; flex-direction: column; gap: 9px; }
+.comparison-links { display: flex; width: 100%; min-width: 0; align-items: center; justify-content: flex-end; gap: 12px; }
+.comparison-links .invocation-id { min-width: 0; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.comparison-link-label { color: var(--color-text-faint) !important; font-size: 8px; letter-spacing: 0.09em; text-transform: uppercase; }
+.comparison-invocation-empty { color: var(--color-text-faint); font-family: var(--font-mono); font-size: 9px; }
+.restate-link--compact { min-height: 32px; flex: 0 0 auto; gap: 12px; padding: 6px 10px; }
 .comparison-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .outcome-card { display: flex; min-width: 0; min-height: 360px; flex-direction: column; padding: 27px 29px; }
 .outcome-card--baseline { border-color: var(--color-border); }
@@ -780,9 +786,7 @@ code {
 .markdown-image-placeholder { display: inline-block; padding: 5px 8px; border: 1px dashed var(--color-border-brand); border-radius: 6px; color: var(--color-text-faint); font-size: 11px; }
 .inline-error { margin: 0 28px 25px; padding: 11px 13px; border: 1px solid rgba(185, 56, 61, 0.2); border-radius: var(--radius-sm); background: var(--color-danger-surface); color: var(--color-danger-strong); font-family: var(--font-mono); font-size: 10px; }
 
-/* Invocation proof strip */
-.evidence-bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 24px; margin-top: 15px; padding: 14px 17px; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.72); box-shadow: var(--shadow-card); backdrop-filter: blur(12px); }
-.evidence-bar > div:first-child { min-width: 0; }
+/* Invocation proof */
 .invocation-id { display: flex; max-width: 100%; align-items: center; gap: 7px; margin-top: 2px; padding: 0; overflow-wrap: anywhere; border: 0; background: transparent; color: var(--color-brand); cursor: pointer; font-family: var(--font-mono); font-size: 10px; }
 .invocation-id span { color: var(--color-action); }
 .muted { color: var(--color-text-faint); font-size: 10px; }
@@ -815,6 +819,7 @@ code {
   .composer { width: 100%; }
   .control-grid { grid-template-columns: 1fr; }
   .execution-comparison-grid { grid-template-columns: 1fr; }
+  .comparison-heading { grid-template-columns: 1fr; }
   .comparison-grid { grid-template-columns: 1fr; }
   .outcome-card { min-height: 0; }
 }
@@ -844,7 +849,9 @@ code {
   .execution-heading, .execution-summary, .metric-row, .journal-drawer, .timeline, .timeline-placeholder { grid-column: 1; }
   .execution-summary { justify-content: flex-start; }
   .timeline-placeholder { min-height: 72px; padding: 5px; }
-  .comparison-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .comparison-heading { align-items: flex-start; gap: 10px; }
+  .comparison-tools { width: 100%; align-items: flex-start; }
+  .comparison-links { justify-content: flex-start; }
   .comparison-phase { max-width: none; text-align: left; }
   .outcome-card { padding: 24px; }
   .outcome-title { font-size: 30px; }
@@ -870,8 +877,9 @@ code {
   .recovery-proof > div { align-items: flex-start; flex-direction: column; gap: 3px; }
   .recovery-proof dd { text-align: left; }
   .answer-copy { padding: 22px 20px 27px; }
-  .evidence-bar { grid-template-columns: 1fr; gap: 12px; }
-  .restate-link { width: 100%; }
+  .comparison-links { align-items: stretch; flex-direction: column; }
+  .comparison-links .invocation-id { min-height: 30px; }
+  .comparison-links .restate-link { width: 100%; }
 }
 
 @media (pointer: coarse) {

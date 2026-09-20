@@ -55,10 +55,6 @@ function isTerminal(status: DisplayStatus) {
   return ["completed", "cancelled", "failed"].includes(status);
 }
 
-function shortId(value: string) {
-  return value.length > 23 ? `${value.slice(0, 14)}…${value.slice(-6)}` : value;
-}
-
 export function DemoApp() {
   const [selectedPresetId, setSelectedPresetId] = useState<DemoPresetId>(demoPresets[0].id);
   const selectedPreset = demoPresets.find((preset) => preset.id === selectedPresetId) ?? demoPresets[0];
@@ -377,7 +373,7 @@ export function DemoApp() {
         />
       </section>
 
-      <ExecutionComparison snapshot={snapshot} run={selectedRun} onCopyId={copyInvocationId} />
+      <ExecutionComparison snapshot={snapshot} run={selectedRun} onCopyId={copyInvocationId} restateLink={restateLink} />
 
       <article className="panel answer-panel answer-panel--wide">
         <div className="panel-heading answer-heading">
@@ -422,21 +418,6 @@ export function DemoApp() {
         )}
       </article>
 
-      <footer className="evidence-bar">
-        <div>
-          <span className="section-kicker">Invocation</span>
-          {selectedInvocationId ? (
-            <button type="button" className="invocation-id" onClick={copyInvocationId} title="Copy invocation ID">
-              {shortId(selectedInvocationId)} <span>⧉</span>
-            </button>
-          ) : (
-            <span className="muted">Starts with your first run</span>
-          )}
-        </div>
-        <a className={`restate-link ${!selectedInvocationId ? "restate-link--disabled" : ""}`} href={restateLink} target="_blank" rel="noreferrer">
-          Open in Restate <span>↗</span>
-        </a>
-      </footer>
     </main>
   );
 }

@@ -10,6 +10,10 @@ function formatClock(value: string) {
   }).format(new Date(value));
 }
 
+function shortId(value: string) {
+  return value.length > 23 ? `${value.slice(0, 14)}…${value.slice(-6)}` : value;
+}
+
 function isBreakingEvent(event: TimelineEvent) {
   if (event.kind === "worker.exited") return true;
   if (event.kind !== "fault.applied") return false;
@@ -108,10 +112,11 @@ function BaselineExecution({ snapshot, run }: { snapshot: RunSnapshot | null; ru
   );
 }
 
-export function ExecutionComparison({ snapshot, run, onCopyId }: {
+export function ExecutionComparison({ snapshot, run, onCopyId, restateLink }: {
   snapshot: RunSnapshot | null;
   run: RunRecord | null;
   onCopyId: () => void;
+  restateLink: string;
 }) {
   const story = selectRecoveryStory(snapshot, run);
 
@@ -122,7 +127,22 @@ export function ExecutionComparison({ snapshot, run, onCopyId }: {
           <p className="section-kicker">The durability difference</p>
           <h2 id="execution-comparison-heading">Same task. Same failure. Two outcomes.</h2>
         </div>
-        <span className="comparison-phase" role="status">{story.phase}</span>
+        <div className="comparison-tools">
+          <span className="comparison-phase" role="status">{story.phase}</span>
+          <div className="comparison-links">
+            {run ? (
+              <button type="button" className="invocation-id" onClick={onCopyId} title="Copy invocation ID">
+                <span className="comparison-link-label">Invocation</span>
+                {shortId(run.invocationId)} <span aria-hidden="true">⧉</span>
+              </button>
+            ) : (
+              <span className="comparison-invocation-empty">Invocation starts with your first run</span>
+            )}
+            <a className={`restate-link restate-link--compact ${!run ? "restate-link--disabled" : ""}`} href={restateLink} target="_blank" rel="noreferrer">
+              Open in Restate <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+        </div>
       </div>
       <div className="execution-comparison-grid">
         <BaselineExecution snapshot={snapshot} run={run} />
