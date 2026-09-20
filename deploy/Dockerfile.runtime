@@ -4,6 +4,8 @@ ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
 ENV NODE_ENV=production
 ENV PORT=3100
+ENV CONTROLLER_HOST=0.0.0.0
+ENV WORKER_HOST=0.0.0.0
 
 RUN corepack enable && corepack prepare pnpm@9.14.2 --activate
 

@@ -24,7 +24,9 @@ import { loadLocalEnvironment } from "../../../scripts/env";
 loadLocalEnvironment();
 
 const port = Number(process.env.CONTROLLER_PORT ?? process.env.PORT ?? 3_100);
-const host = process.env.CONTROLLER_HOST ?? "127.0.0.1";
+const host =
+  process.env.CONTROLLER_HOST ??
+  (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
 const internalToken = process.env.CONTROLLER_INTERNAL_TOKEN ?? "local-demo-token";
 const restateUiUrl = process.env.RESTATE_UI_URL ?? "http://127.0.0.1:9070/ui";

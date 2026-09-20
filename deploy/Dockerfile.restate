@@ -1,1 +1,3 @@
 FROM docker.restate.dev/restatedev/restate:1.7.9
+
+EXPOSE 8080 9070 5122

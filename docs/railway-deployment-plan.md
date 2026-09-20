@@ -56,7 +56,7 @@ The service names in this runbook are significant. Name them exactly `restate`, 
    RESTATE_NODE_NAME=restate-1
    RESTATE_AUTO_PROVISION=true
    RESTATE_LISTEN_MODE=tcp
-   RESTATE_BIND_IP=::
+   RESTATE_BIND_IP=0.0.0.0
    RESTATE_ADVERTISED_ADDRESS=http://${{restate.RAILWAY_PRIVATE_DOMAIN}}:5122
    ```
 
@@ -81,13 +81,13 @@ The stable node name and persistent `/restate-data` volume must stay together. R
    RAILWAY_DOCKERFILE_PATH=/deploy/Dockerfile.runtime
    PORT=3100
    CONTROLLER_PORT=3100
-   CONTROLLER_HOST=::
+   CONTROLLER_HOST=0.0.0.0
    CONTROLLER_URL=http://127.0.0.1:3100
    CONTROLLER_INTERNAL_TOKEN=<paste-the-random-token>
    DEMO_DATABASE_PATH=/data/evidence.sqlite
 
    WORKER_PORT=9080
-   WORKER_HOST=::
+   WORKER_HOST=0.0.0.0
    WORKER_PUBLIC_URL=http://${{runtime.RAILWAY_PRIVATE_DOMAIN}}:9080
 
    RESTATE_INGRESS_URL=http://${{restate.RAILWAY_PRIVATE_DOMAIN}}:8080
@@ -112,7 +112,7 @@ The stable node name and persistent `/restate-data` volume must stay together. R
 7. Deploy it. In the deployment logs, look for both:
 
    ```text
-   Restate agent worker listening on :::9080
+   Restate agent worker listening on 0.0.0.0:9080
    Registered Restate worker deployment at http://runtime.railway.internal:9080
    ```
 
@@ -129,7 +129,7 @@ The stable node name and persistent `/restate-data` volume must stay together. R
    CONTROLLER_URL=http://${{runtime.RAILWAY_PRIVATE_DOMAIN}}:3100
    ```
 
-3. Set the health-check path to `/`.
+3. Set the health-check path to `/health`.
 4. Do not add `ANTHROPIC_API_KEY` to this service. The browser talks to same-origin Next.js routes; the Next.js server calls `runtime` over Railway's private network.
 5. Under **Settings** → **Networking**, generate a temporary Railway domain.
 6. Open the temporary domain and confirm the header shows Restate, Worker, and Claude online before configuring custom DNS.
@@ -198,7 +198,7 @@ The JSON should contain `"ok":true` and an online worker.
 
 Read the runtime logs in this order:
 
-- If the worker never says it is listening, verify `WORKER_HOST=::` and `WORKER_PORT=9080`.
+- If the worker never says it is listening, verify `WORKER_HOST=0.0.0.0` and `WORKER_PORT=9080`.
 - If registration repeats, verify the service names are exactly `runtime` and `restate`, and re-enter the Railway reference variables rather than hardcoding private domains.
 - If Restate is offline, confirm `restate` is healthy and its volume is mounted at `/restate-data`.
 - If only Anthropic is unavailable, verify `ANTHROPIC_API_KEY` exists on `runtime` and is not the placeholder value.

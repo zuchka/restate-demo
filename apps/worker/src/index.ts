@@ -18,7 +18,9 @@ const controllerToken = process.env.CONTROLLER_INTERNAL_TOKEN ?? "local-demo-tok
 const bootId = process.env.WORKER_BOOT_ID ?? "manual-worker";
 const modelName = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5";
 const workerPort = Number(process.env.WORKER_PORT ?? 9_080);
-const workerHost = process.env.WORKER_HOST ?? "127.0.0.1";
+const workerHost =
+  process.env.WORKER_HOST ??
+  (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 const demoToolDelay = Number(process.env.DEMO_TOOL_DELAY_MS ?? 2_200);
 
 function stableHash(value: unknown) {
