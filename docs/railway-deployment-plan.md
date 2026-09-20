@@ -57,7 +57,6 @@ The service names in this runbook are significant. Name them exactly `restate`, 
    RESTATE_AUTO_PROVISION=true
    RESTATE_LISTEN_MODE=tcp
    RESTATE_BIND_IP=0.0.0.0
-   RESTATE_ADVERTISED_ADDRESS=http://${{restate.RAILWAY_PRIVATE_DOMAIN}}:5122
    ```
 
 3. Add a Railway volume and mount it at exactly:
@@ -71,6 +70,8 @@ The service names in this runbook are significant. Name them exactly `restate`, 
 6. Deploy and wait for the service to become healthy.
 
 The stable node name and persistent `/restate-data` volume must stay together. Restate restores a node by finding the directory whose name matches its node name.
+
+Do not set `RESTATE_ADVERTISED_ADDRESS` for this single-node deployment. During the first boot, Restate uses the advertised fabric address to provision itself. Railway's private service DNS is not available until the deployment is healthy, which creates a bootstrap loop: Restate cannot provision, the Admin API never becomes ready, and Railway's `/health` check fails. The `runtime` service can still reach Restate through the `restate` service's `RAILWAY_PRIVATE_DOMAIN` after the deployment is online.
 
 ## 3. Add the private `runtime` service
 
@@ -193,6 +194,10 @@ curl -fsS https://restate-demo.zuchka.dev/api/control/health
 The JSON should contain `"ok":true` and an online worker.
 
 ## 7. Troubleshooting
+
+### The `restate` health check reports `service unavailable`
+
+Open the Restate deploy logs. If they contain `Failed to auto provision the cluster` followed by a DNS error for a `*.railway.internal:5122` address, remove `RESTATE_ADVERTISED_ADDRESS` and redeploy. Keep `PORT=9070`, `RESTATE_AUTO_PROVISION=true`, and the `/restate-data` volume.
 
 ### The `runtime` health check never becomes healthy
 
